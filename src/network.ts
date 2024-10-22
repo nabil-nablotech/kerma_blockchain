@@ -1,8 +1,11 @@
 import * as net from 'net'
 import { logger } from './logger'
-import { Peer } from './peer'
+import { NAME, Peer, VERSION } from './peer'
 import { EventEmitter } from 'events'
 import { peerManager } from './peermanager'
+import { IPFamily } from './enums/IPfamily'
+import { messageGenerator } from './utils/message-generator'
+import { MessageHandler } from './utils/message-handler'
 
 class Network {
   /* TODO */
@@ -14,6 +17,13 @@ class Network {
       logger.info(`New connection from peer ${socket.remoteAddress}`)
       /* TODO */
       // add peer to known peers
+      if (socket.remoteFamily === IPFamily.IPv4) {
+        const peerAddress: string = socket.remoteAddress + ":" + socket.remotePort
+        const helloMessage: string = messageGenerator.generateHelloMessage(VERSION,NAME)
+        socket.write(helloMessage)
+        peerManager.peerDiscovered(peerAddress)
+      }
+
     })
 
     logger.info(`Listening for connections on port ${bindPort} and IP ${bindIP}`)
@@ -21,6 +31,13 @@ class Network {
 
     /* TODO */
     // perform initial connection to known peers 
+    const peers: { [key: string]: Peer; } = {}
+    peerManager.getKnownPeers().forEach((peerAddress) => {
+      logger.info(`Performing inital connetion to peers: ${peerAddress}`)
+      const peer:Peer = new Peer(MessageSocket.createClient(peerAddress), peerAddress);
+      const [host, port] = peerAddress.split(":");
+      peer.getSocket().getNetSocket().connect(parseInt(port),host);
+    })
   }
 
   broadcast(obj: object) {
@@ -51,8 +68,13 @@ export class MessageSocket extends EventEmitter {
     // what to do when data arrives
     this.netSocket.on('data', (data: string) => {
       /* TODO: handle data */
+      // const messageHandler = new MessageHandler(this)
     })
     /* TODO */
+  }
+
+  getNetSocket(): net.Socket {
+    return this.netSocket
   }
 
   sendMessage(message: string) {

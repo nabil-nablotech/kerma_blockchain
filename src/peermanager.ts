@@ -4,6 +4,7 @@ import isValidHostname from 'is-valid-hostname'
 
 const BOOTSTRAP_PEERS: string[] = [
   /* TODO */
+  "128.130.122.101:18018"
 ]
 
 class PeerManager {
@@ -11,14 +12,17 @@ class PeerManager {
 
   async load() {
     /* TODO */
+    BOOTSTRAP_PEERS.forEach((address)=>this.knownPeers.add(address))
+    
   }
-  
+
   async store() {
     /* TODO */
   }
 
   peerDiscovered(peerAddr: string) {
     /* TODO */
+    this.knownPeers.add(peerAddr);
   }
 
   /**
@@ -27,6 +31,11 @@ class PeerManager {
    */
   peerFailed(peerAddr: string) {
     /* TODO */
+    this.knownPeers.delete(peerAddr)
+  }
+
+  getKnownPeers(): Set<string> {
+    return this.knownPeers
   }
 }
 

@@ -1,30 +1,34 @@
 import { logger } from './logger'
 import { MessageSocket } from './network'
-import { Messages,
-         Message,
-         HelloMessage,
-         PeersMessage, GetPeersMessage,
-         IHaveObjectMessage, GetObjectMessage, ObjectMessage,
-         GetChainTipMessage, ChainTipMessage,
-         ErrorMessage,
-         MessageType,
-         HelloMessageType,
-         PeersMessageType, GetPeersMessageType,
-         IHaveObjectMessageType, GetObjectMessageType, ObjectMessageType,
-         GetChainTipMessageType, ChainTipMessageType,
-         ErrorMessageType,
-         GetMempoolMessageType,
-         MempoolMessageType
-        } from './message'
+import {
+  Messages,
+  Message,
+  HelloMessage,
+  PeersMessage, GetPeersMessage,
+  IHaveObjectMessage, GetObjectMessage, ObjectMessage,
+  GetChainTipMessage, ChainTipMessage,
+  ErrorMessage,
+  MessageType,
+  HelloMessageType,
+  PeersMessageType, GetPeersMessageType,
+  IHaveObjectMessageType, GetObjectMessageType, ObjectMessageType,
+  GetChainTipMessageType, ChainTipMessageType,
+  ErrorMessageType,
+  GetMempoolMessageType,
+  MempoolMessageType
+} from './message'
 import { peerManager } from './peermanager'
 import { db, objectManager } from './object'
 import { network } from './network'
 import { ObjectId } from './object'
 import { chainManager } from './chain'
 import { mempool } from './mempool'
+import { messageGenerator } from './utils/message-generator'
+import { MessageHandler } from './utils/message-handler'
+import { InvalidHandshakeMessage } from './enums/error'
 
-const VERSION = 'x.y.z' /* TODO */
-const NAME = 'name' /* TODO */
+export const VERSION = '0.10.1' /* TODO */
+export const NAME = 'nablotech' /* TODO */
 
 // Number of peers that each peer is allowed to report to us
 const MAX_PEERS_PER_PEER = 30
@@ -32,7 +36,16 @@ const MAX_PEERS_PER_PEER = 30
 export class Peer {
   socket: MessageSocket
   peerAddr: string
+  timeout: any
   /* TODO */
+
+  getSocket(): MessageSocket {
+    return this.socket
+  }
+
+  getPeerAddr(): string {
+    return this.peerAddr
+  }
 
   async sendHello() {
     /* TODO */
@@ -66,6 +79,9 @@ export class Peer {
   }
   async sendError(err: string) {
     /* TODO */
+    this.socket.getNetSocket().write(err)
+    this.socket.getNetSocket().end()
+    peerManager.peerFailed(this.socket.getNetSocket().remoteAddress + ":" + this.socket.getNetSocket().remotePort)
   }
   sendMessage(obj: object) {
     /* TODO */
@@ -78,16 +94,27 @@ export class Peer {
   }
   async onConnect() {
     /* TODO */
+    logger.info(`On Connection Establishment sending hello message to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
+    const helloMessage: string = messageGenerator.generateHelloMessage(VERSION, NAME)
+    this.socket.getNetSocket().write(helloMessage)
+
+    this.timeout = setTimeout(() => {
+      console.error('No response from the server after 20 seconds.');
+      const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: InvalidHandshakeMessage.INVALID_HANDSHAKE })
+      this.sendError(errorMessage)
+    }, 20000);
   }
   async onMessage(message: string) {
     this.debug(`Message arrival: ${message}`)
+    const messageHandler = new MessageHandler(this)
+    messageHandler.handleData(message)
 
     let msg: object = {}
 
     /* TODO */
 
     // check if this msg is a valid Message
-    if (!Message.guard(msg)){
+    if (!Message.guard(msg)) {
       /* TODO */
     }
     /* TODO */
@@ -106,8 +133,10 @@ export class Peer {
     )(msg)*/
   }
 
-  async onMessageHello(msg: HelloMessageType) {
+  async onMessageHello() {
     /* TODO */
+    clearTimeout(this.timeout)
+    this.socket.getNetSocket().write(messageGenerator.generateGetPeersMessage())
   }
   async onMessagePeers(msg: PeersMessageType) {
     /* TODO */
