@@ -25,7 +25,7 @@ import { chainManager } from './chain'
 import { mempool } from './mempool'
 import { messageGenerator } from './utils/message-generator'
 import { MessageHandler } from './utils/message-handler'
-import { InvalidHandshakeMessage } from './enums/error'
+import { ErrorKey, InvalidHandshakeMessage } from './enums/error'
 
 export const VERSION = '0.10.1' /* TODO */
 export const NAME = 'nablotech' /* TODO */
@@ -37,6 +37,7 @@ export class Peer {
   socket: MessageSocket
   peerAddr: string
   timeout: any
+  messageHandler: MessageHandler
   /* TODO */
 
   getSocket(): MessageSocket {
@@ -81,6 +82,8 @@ export class Peer {
     /* TODO */
     this.socket.getNetSocket().write(err)
     this.socket.getNetSocket().end()
+    logger.error(err)
+    logger.error(`Connection with ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort} closed by server.`)
     peerManager.peerFailed(this.socket.getNetSocket().remoteAddress + ":" + this.socket.getNetSocket().remotePort)
   }
   sendMessage(obj: object) {
@@ -97,17 +100,11 @@ export class Peer {
     logger.info(`On Connection Establishment sending hello message to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
     const helloMessage: string = messageGenerator.generateHelloMessage(VERSION, NAME)
     this.socket.getNetSocket().write(helloMessage)
-
-    this.timeout = setTimeout(() => {
-      console.error('No response from the server after 20 seconds.');
-      const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: InvalidHandshakeMessage.INVALID_HANDSHAKE })
-      this.sendError(errorMessage)
-    }, 20000);
+    this.startTimeout()
   }
   async onMessage(message: string) {
     this.debug(`Message arrival: ${message}`)
-    const messageHandler = new MessageHandler(this)
-    messageHandler.handleData(message)
+    this.messageHandler.handleData(message)
 
     let msg: object = {}
 
@@ -133,16 +130,30 @@ export class Peer {
     )(msg)*/
   }
 
+  async onData(data: string) {
+    this.debug(`Data arrival: ${data}`)
+    this.messageHandler.handleData(data.toString())
+
+  }
+
   async onMessageHello() {
     /* TODO */
-    clearTimeout(this.timeout)
+    if (typeof this.timeout !== "undefined") {
+      clearTimeout(this.timeout)
+    }
+    logger.info(`Hello Message recieved from: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
     this.socket.getNetSocket().write(messageGenerator.generateGetPeersMessage())
+    logger.info(`Getpeers message sent to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
   }
   async onMessagePeers(msg: PeersMessageType) {
     /* TODO */
+    logger.info(`Peers message sent to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
   }
   async onMessageGetPeers(msg: GetPeersMessageType) {
     /* TODO */
+    logger.info(`Getpeers message recieved from : ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
+    this.socket.getNetSocket().write(messageGenerator.generatePeersMessage(Array.from(peerManager.getKnownPeers())))
+    logger.info(`Peers message sent to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
   }
   async onMessageIHaveObject(msg: IHaveObjectMessageType) {
     /* TODO */
@@ -165,9 +176,23 @@ export class Peer {
   async onMessageMempool(msg: MempoolMessageType) {
     /* TODO */
   }
-  async onMessageError(msg: ErrorMessageType) {
+  async onMessageError(error: any) {
     /* TODO */
+    if (error.name == ErrorKey.INVALID_HANDSHAKE) {
+      const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: error.msg })
+      this.sendError(errorMessage)
+    }
+
   }
+
+  async startTimeout() {
+    this.timeout = setTimeout(() => {
+      logger.error(`Didn't recieve hello message from: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort} within timeout time.`)
+      const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: InvalidHandshakeMessage.INVALID_HANDSHAKE })
+      this.sendError(errorMessage)
+    }, 20000);
+  }
+
   log(level: string, message: string, ...args: any[]) {
     logger.log(
       level,
@@ -187,6 +212,7 @@ export class Peer {
   constructor(socket: MessageSocket, peerAddr: string) {
     this.socket = socket
     this.peerAddr = peerAddr
+    this.messageHandler = new MessageHandler(this)
 
     socket.netSocket.on('connect', this.onConnect.bind(this))
     socket.netSocket.on('error', err => {
@@ -194,5 +220,8 @@ export class Peer {
       this.fail()
     })
     socket.on('message', this.onMessage.bind(this))
+
+    // what to do when data arrives
+    socket.netSocket.on('data', this.onData.bind(this))
   }
 }

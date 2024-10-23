@@ -5,7 +5,6 @@ import { EventEmitter } from 'events'
 import { peerManager } from './peermanager'
 import { IPFamily } from './enums/IPfamily'
 import { messageGenerator } from './utils/message-generator'
-import { MessageHandler } from './utils/message-handler'
 
 class Network {
   /* TODO */
@@ -19,8 +18,11 @@ class Network {
       // add peer to known peers
       if (socket.remoteFamily === IPFamily.IPv4) {
         const peerAddress: string = socket.remoteAddress + ":" + socket.remotePort
-        const helloMessage: string = messageGenerator.generateHelloMessage(VERSION,NAME)
-        socket.write(helloMessage)
+        const peer = new Peer(new MessageSocket(socket, peerAddress), peerAddress)
+        const helloMessage: string = messageGenerator.generateHelloMessage(VERSION, NAME)
+        logger.info(`Connection establish by client, sending hello message to: ${peerAddress}`)
+        peer.getSocket().getNetSocket().write(helloMessage)
+        peer.startTimeout()
         peerManager.peerDiscovered(peerAddress)
       }
 
@@ -31,12 +33,11 @@ class Network {
 
     /* TODO */
     // perform initial connection to known peers 
-    const peers: { [key: string]: Peer; } = {}
     peerManager.getKnownPeers().forEach((peerAddress) => {
       logger.info(`Performing inital connetion to peers: ${peerAddress}`)
-      const peer:Peer = new Peer(MessageSocket.createClient(peerAddress), peerAddress);
+      const peer: Peer = new Peer(MessageSocket.createClient(peerAddress), peerAddress);
       const [host, port] = peerAddress.split(":");
-      peer.getSocket().getNetSocket().connect(parseInt(port),host);
+      peer.getSocket().getNetSocket().connect(parseInt(port), host);
     })
   }
 
@@ -65,12 +66,6 @@ export class MessageSocket extends EventEmitter {
 
     this.peerAddr = peerAddr
     this.netSocket = netSocket
-    // what to do when data arrives
-    this.netSocket.on('data', (data: string) => {
-      /* TODO: handle data */
-      // const messageHandler = new MessageHandler(this)
-    })
-    /* TODO */
   }
 
   getNetSocket(): net.Socket {

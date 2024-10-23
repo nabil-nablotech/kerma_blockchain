@@ -15,24 +15,24 @@ export class MessageHandler {
     }
 
     handleData(data: string) {
-
         this.buffer += data
         let fragments = this.buffer.split('\n')
-
-        while (fragments.length > 1) {
-            const messageString = fragments.shift();
-            if (messageString) {
-                this.processMessage(messageString);
+        console.log("data: " + data)
+        console.log("Fragements: " + fragments)
+        console.log("Fragements sixe: " + fragments.length)
+        console.log("buffer: " + this.buffer)
+        for (let i = 0; i < fragments.length; i++) {
+            if (fragments[i] != "") {
+                this.processMessage(fragments[i]);
             }
         }
 
-        this.buffer = fragments.length > 0 ? fragments[0] + this.separator : '';
+        this.buffer = fragments.length > 0 && fragments[fragments.length - 1] !== "" ? fragments[fragments.length - 1] + this.separator : '';
     }
 
     processMessage(data: string) {
         const validator = new Validator();
         let mergedMessage: any = {}
-
         if (data.includes(this.separator)) {
             let packets = data.split(this.separator)
             for (let i = 0; i < packets.length; i++) {
@@ -63,7 +63,6 @@ export class MessageHandler {
         }
 
         let error: ErrorMessage | undefined
-
         error = validator.validateFormat(mergedMessage);
         if (error) {
             const errorMessage: string = messageGenerator.generateErrorMessage(error)
@@ -78,8 +77,20 @@ export class MessageHandler {
             return
         }
 
-        if(mergedMessage.type === MessageType.Hello){
+        if (mergedMessage.type === MessageType.Hello) {
             this.peer.onMessageHello()
+        }
+
+        if (mergedMessage.type === MessageType.Error) {
+            this.peer.onMessageError(mergedMessage)
+        }
+
+        if (mergedMessage.type === MessageType.Getpeers) {
+            this.peer.onMessageGetPeers(mergedMessage)
+        }
+
+        if (mergedMessage.type === MessageType.Peers) {
+            this.peer.onMessagePeers(mergedMessage)
         }
 
     }

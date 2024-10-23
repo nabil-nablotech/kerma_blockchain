@@ -14,8 +14,13 @@ class MessageGenerator {
     }
 
     generateGetPeersMessage(): string {
-        const errorMessage = { type: MessageType.Getpeers }
-        return this.canonicalJSONStringify(errorMessage)
+        const getPeersMessage = { type: MessageType.Getpeers }
+        return this.canonicalJSONStringify(getPeersMessage)
+    }
+
+    generatePeersMessage(peerAddresses: string[]): string {
+        const peersMessage = { type: MessageType.Peers, peers: peerAddresses }
+        return this.canonicalJSONStringify(peersMessage)
     }
 
     canonicalJSONStringify(obj: any): string {

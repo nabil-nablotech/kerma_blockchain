@@ -6,6 +6,8 @@ export class Validator {
     validateFormat(message: any): InvalidFormatError | undefined {
         if (!this.checkObjectKeys(message)) {
             return { INVALID_FORMAT: InvalidFormatMessage.KEY_MISSING_OR_ADDITIONAL }
+        } else if (!this.checkPeersMessage(message)) {
+            return { INVALID_FORMAT: InvalidFormatMessage.INVALID_PEER }
         }
 
         return undefined
@@ -26,12 +28,15 @@ export class Validator {
                     if (Object.keys(data).length > 3) {
                         return false;
                     }
-                    return true
+                } else if (data.type === MessageType.Peers && data.peers === "object") {
+                    if (Object.keys(data).length > 2 || !Array.isArray(data.peers)) {
+                        return false;
+                    }
                 }
             }
         }
 
-        return false
+        return true
     }
 
     checkHelloMessage(data: any): boolean {
@@ -41,15 +46,15 @@ export class Validator {
                     if (Object.keys(data).length > 3) {
                         return false;
                     }
-                    if (/^0\.10\.\d$/.test(data.version) && this.checkAgent(data.agent)) {
-                        return true
+                    if (!/^0\.10\.\d$/.test(data.version) || !this.checkAgent(data.agent)) {
+                        return false
                     }
 
                 }
             }
         }
 
-        return false
+        return true
     }
 
     checkAgent(agent: string): boolean {
@@ -65,5 +70,51 @@ export class Validator {
         }
 
         return true;
+    }
+
+    checkPeersMessage(data: any): boolean {
+        if (typeof data === "object") {
+            if (data != null && typeof data.type === "string") {
+                if (data.type === MessageType.Peers && data.peers === "object") {
+                    if (Object.keys(data).length > 2 || !Array.isArray(data.peers)) {
+                        return false;
+                    }
+
+                    for (let i = 0; i < data.peers.length; i++) {
+                        const [host, port] = data.peers[i];
+                        if (host == undefined || port == undefined) {
+                            return false
+                        } else if (parseInt(port) < 1 || parseInt(port) > 65535) {
+                            return false
+                        }
+
+                        const regex = /^[a-zA-Z\d\.\-\_]{3,50}$/;
+                        let isValidDomain = true
+                        if (!regex.test(host)) {
+                            isValidDomain = false;
+                        }
+
+
+                        if (host.indexOf('.') === -1 || host.startsWith('.') || host.endsWith('.')) {
+                            isValidDomain = false;
+                        }
+
+
+                        const hasLetter = /[a-zA-Z]/.test(host);
+                        if (!hasLetter) {
+                            isValidDomain = false;
+                        }
+
+                        const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})\.(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})\.(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})\.(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})$/;
+
+                        if (!isValidDomain && !ipv4Regex.test(host)) {
+                            return false
+                        }
+                    }
+                }
+            }
+        }
+
+        return true
     }
 }
