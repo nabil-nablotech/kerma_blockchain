@@ -75,13 +75,12 @@ export class Validator {
     checkPeersMessage(data: any): boolean {
         if (typeof data === "object") {
             if (data != null && typeof data.type === "string") {
-                if (data.type === MessageType.Peers && data.peers === "object") {
+                if (data.type === MessageType.Peers && typeof data.peers === "object") {
                     if (Object.keys(data).length > 2 || !Array.isArray(data.peers)) {
                         return false;
                     }
-
                     for (let i = 0; i < data.peers.length; i++) {
-                        const [host, port] = data.peers[i];
+                        const [host, port] = data.peers[i].split(":");
                         if (host == undefined || port == undefined) {
                             return false
                         } else if (parseInt(port) < 1 || parseInt(port) > 65535) {
@@ -106,7 +105,6 @@ export class Validator {
                         }
 
                         const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})\.(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})\.(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})\.(25[0-5]|2[0-4]\d|1\d{2}|\d{1,2})$/;
-
                         if (!isValidDomain && !ipv4Regex.test(host)) {
                             return false
                         }

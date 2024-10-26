@@ -17,15 +17,15 @@ export class MessageHandler {
     handleData(data: string) {
         this.buffer += data
         let fragments = this.buffer.split('\n')
-        console.log("data: " + data)
-        console.log("Fragements: " + fragments)
-        console.log("Fragements sixe: " + fragments.length)
-        console.log("buffer: " + this.buffer)
-        for (let i = 0; i < fragments.length; i++) {
-            if (fragments[i] != "") {
-                this.processMessage(fragments[i]);
+
+        if (fragments.length > 1) {
+            for (let i = 0; i < fragments.length; i++) {
+                if (fragments[i] != "") {
+                    this.processMessage(fragments[i]);
+                }
             }
         }
+
 
         this.buffer = fragments.length > 0 && fragments[fragments.length - 1] !== "" ? fragments[fragments.length - 1] + this.separator : '';
     }
