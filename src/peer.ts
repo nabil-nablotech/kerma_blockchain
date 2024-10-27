@@ -169,10 +169,14 @@ export class Peer {
     }
 
   }
-  async onMessagePeers(msg: PeersMessageType) {
+  async onMessagePeers(msg: any) {
     /* TODO */
     const peerAddress: string = `${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`
-    logger.info(`Peers message sent to: ${peerAddress}`)
+    logger.info(`Peers message recieved from: ${peerAddress}`)
+    for (let i = 0; i < msg.peers.length; i++) {
+      peerManager.peerDiscovered(msg.peers[i])
+    }
+
   }
   async onMessageGetPeers(msg: GetPeersMessageType) {
     /* TODO */
