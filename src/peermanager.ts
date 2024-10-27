@@ -1,6 +1,7 @@
 import { db } from './object'
 import { logger } from './logger'
 import isValidHostname from 'is-valid-hostname'
+import { MAX_PEERS_PER_PEER } from './peer'
 
 export const BOOTSTRAP_PEERS: string[] = [
   /* TODO */
@@ -12,7 +13,7 @@ class PeerManager {
 
   async load() {
     /* TODO */
-    
+
   }
 
   async store() {
@@ -21,6 +22,9 @@ class PeerManager {
 
   peerDiscovered(peerAddr: string) {
     /* TODO */
+    if (this.knownPeers.size == MAX_PEERS_PER_PEER) {
+      this.knownPeers.delete(Array.from(this.knownPeers)[0])
+    }
     this.knownPeers.add(peerAddr);
   }
 

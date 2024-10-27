@@ -31,7 +31,7 @@ export const VERSION = '0.10.1' /* TODO */
 export const NAME = 'nablotech' /* TODO */
 
 // Number of peers that each peer is allowed to report to us
-const MAX_PEERS_PER_PEER = 30
+export const MAX_PEERS_PER_PEER = 30
 
 export class Peer {
   helloMessageSent: boolean
