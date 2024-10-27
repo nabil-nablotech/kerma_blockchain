@@ -1,6 +1,7 @@
-import { ErrorMessage, InvalidFormatMessage } from "../enums/error";
+import { ErrorMessage, InvalidFormatMessage, InvalidHandshakeMessage } from "../enums/error";
 import { MessageType } from "../enums/message-type";
 import { Peer } from "../peer";
+import { peerManager } from "../peermanager";
 import { messageGenerator } from "./message-generator";
 import { Validator } from "./validator";
 
@@ -79,19 +80,25 @@ export class MessageHandler {
 
         if (mergedMessage.type === MessageType.Hello) {
             this.peer.onMessageHello()
+            return
         }
 
-        if (mergedMessage.type === MessageType.Error) {
-            this.peer.onMessageError(mergedMessage)
+        const peerAddress = `${this.peer.getSocket().getNetSocket().remoteAddress}:${this.peer.getSocket().getNetSocket().remotePort}`
+
+        if (mergedMessage.type !== MessageType.Hello && peerManager.getKnownPeers().has(peerAddress)) {
+            if (mergedMessage.type === MessageType.Error) {
+                this.peer.onMessageError(mergedMessage)
+            } else if (mergedMessage.type === MessageType.Getpeers) {
+                this.peer.onMessageGetPeers(mergedMessage)
+            } else if (mergedMessage.type === MessageType.Peers) {
+                this.peer.onMessagePeers(mergedMessage)
+            }
+        } else {
+            const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: InvalidHandshakeMessage.INVALID_HANDSHAKE })
+            this.peer.sendError(errorMessage)
         }
 
-        if (mergedMessage.type === MessageType.Getpeers) {
-            this.peer.onMessageGetPeers(mergedMessage)
-        }
 
-        if (mergedMessage.type === MessageType.Peers) {
-            this.peer.onMessagePeers(mergedMessage)
-        }
 
     }
 

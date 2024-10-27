@@ -34,6 +34,7 @@ export const NAME = 'nablotech' /* TODO */
 const MAX_PEERS_PER_PEER = 30
 
 export class Peer {
+  helloMessageSent: boolean
   socket: MessageSocket
   peerAddr: string
   timeout: any
@@ -46,6 +47,14 @@ export class Peer {
 
   getPeerAddr(): string {
     return this.peerAddr
+  }
+
+  getHelloMessageSent(): boolean {
+    return this.helloMessageSent
+  }
+
+  setHelloMessageSent(value: boolean) {
+    this.helloMessageSent = value
   }
 
   async sendHello() {
@@ -100,6 +109,7 @@ export class Peer {
     logger.info(`On Connection Establishment sending hello message to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
     const helloMessage: string = messageGenerator.generateHelloMessage(VERSION, NAME)
     this.socket.getNetSocket().write(helloMessage)
+    this.helloMessageSent = true
     this.startTimeout()
   }
   async onMessage(message: string) {
@@ -138,22 +148,38 @@ export class Peer {
 
   async onMessageHello() {
     /* TODO */
+    const peerAddress: string = `${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`
     if (typeof this.timeout !== "undefined") {
       clearTimeout(this.timeout)
     }
-    logger.info(`Hello Message recieved from: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
-    this.socket.getNetSocket().write(messageGenerator.generateGetPeersMessage())
-    logger.info(`Getpeers message sent to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
+    logger.info(`Hello Message recieved from: ${peerAddress}`)
+
+    if (peerManager.getKnownPeers().has(peerAddress) && this.helloMessageSent) {
+      const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: InvalidHandshakeMessage.INVALID_HANDSHAKE })
+      this.sendError(errorMessage)
+    } else if (!peerManager.getKnownPeers().has(peerAddress) && this.helloMessageSent) {
+      peerManager.peerDiscovered(peerAddress)
+      this.socket.getNetSocket().write(messageGenerator.generateGetPeersMessage())
+      logger.info(`Getpeers message sent to: ${peerAddress}`)
+    } else if (!peerManager.getKnownPeers().has(peerAddress) && !this.helloMessageSent) {
+      const helloMessage: string = messageGenerator.generateHelloMessage(VERSION, NAME)
+      logger.info(`Sending hello message to: ${peerAddress}`)
+      this.socket.getNetSocket().write(helloMessage)
+      this.setHelloMessageSent(true)
+    }
+
   }
   async onMessagePeers(msg: PeersMessageType) {
     /* TODO */
-    logger.info(`Peers message sent to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
+    const peerAddress: string = `${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`
+    logger.info(`Peers message sent to: ${peerAddress}`)
   }
   async onMessageGetPeers(msg: GetPeersMessageType) {
     /* TODO */
-    logger.info(`Getpeers message recieved from : ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
+    const peerAddress: string = `${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`
+    logger.info(`Getpeers message recieved from : ${peerAddress}`)
     this.socket.getNetSocket().write(messageGenerator.generatePeersMessage(Array.from(peerManager.getKnownPeers())))
-    logger.info(`Peers message sent to: ${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`)
+    logger.info(`Peers message sent to: ${peerAddress}`)
   }
   async onMessageIHaveObject(msg: IHaveObjectMessageType) {
     /* TODO */
@@ -213,6 +239,7 @@ export class Peer {
     this.socket = socket
     this.peerAddr = peerAddr
     this.messageHandler = new MessageHandler(this)
+    this.helloMessageSent = false
 
     socket.netSocket.on('connect', this.onConnect.bind(this))
     socket.netSocket.on('error', err => {

@@ -2,7 +2,7 @@ import * as net from 'net'
 import { logger } from './logger'
 import { NAME, Peer, VERSION } from './peer'
 import { EventEmitter } from 'events'
-import { peerManager } from './peermanager'
+import { BOOTSTRAP_PEERS, peerManager } from './peermanager'
 import { IPFamily } from './enums/IPfamily'
 import { messageGenerator } from './utils/message-generator'
 
@@ -22,8 +22,8 @@ class Network {
         const helloMessage: string = messageGenerator.generateHelloMessage(VERSION, NAME)
         logger.info(`Connection establish by client, sending hello message to: ${peerAddress}`)
         peer.getSocket().getNetSocket().write(helloMessage)
+        peer.setHelloMessageSent(true)
         peer.startTimeout()
-        peerManager.peerDiscovered(peerAddress)
       }
 
     })
@@ -33,7 +33,7 @@ class Network {
 
     /* TODO */
     // perform initial connection to known peers 
-    peerManager.getKnownPeers().forEach((peerAddress) => {
+    BOOTSTRAP_PEERS.forEach((peerAddress) => {
       logger.info(`Performing inital connetion to peers: ${peerAddress}`)
       const peer: Peer = new Peer(MessageSocket.createClient(peerAddress), peerAddress);
       const [host, port] = peerAddress.split(":");

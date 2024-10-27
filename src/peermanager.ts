@@ -2,7 +2,7 @@ import { db } from './object'
 import { logger } from './logger'
 import isValidHostname from 'is-valid-hostname'
 
-const BOOTSTRAP_PEERS: string[] = [
+export const BOOTSTRAP_PEERS: string[] = [
   /* TODO */
   "128.130.122.101:18018"
 ]
@@ -12,7 +12,6 @@ class PeerManager {
 
   async load() {
     /* TODO */
-    BOOTSTRAP_PEERS.forEach((address)=>this.knownPeers.add(address))
     
   }
 

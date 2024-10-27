@@ -42,7 +42,7 @@ export class Validator {
     checkHelloMessage(data: any): boolean {
         if (typeof data === "object") {
             if (data != null && typeof data.type === "string") {
-                if (data.type === MessageType.Hello && data.version === "string" && data.agent === "string") {
+                if (data.type === MessageType.Hello && typeof data.version === "string" && typeof data.agent === "string") {
                     if (Object.keys(data).length > 3) {
                         return false;
                     }
