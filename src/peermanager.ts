@@ -13,11 +13,24 @@ class PeerManager {
 
   async load() {
     /* TODO */
-
+    try {
+      logger.info("Loading peers from database")
+      const peers = await db.get("peers");
+      this.knownPeers = new Set<string>(peers);
+      logger.info(`Loaded from db: ${Array.from(this.knownPeers).join(",")}`)
+    } catch (error) {
+      logger.error(error)
+    }
   }
 
   async store() {
     /* TODO */
+    try {
+      await db.put("peers", Array.from(this.knownPeers));
+    } catch (error) {
+      logger.error(error)
+    }
+
   }
 
   peerDiscovered(peerAddr: string) {
@@ -26,6 +39,7 @@ class PeerManager {
       this.knownPeers.delete(Array.from(this.knownPeers)[0])
     }
     this.knownPeers.add(peerAddr);
+    this.store()
   }
 
   /**
@@ -35,6 +49,7 @@ class PeerManager {
   peerFailed(peerAddr: string) {
     /* TODO */
     this.knownPeers.delete(peerAddr)
+    this.store()
   }
 
   getKnownPeers(): Set<string> {
