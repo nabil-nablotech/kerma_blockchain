@@ -32,7 +32,17 @@ export class Validator {
                     if (Object.keys(data).length > 2 || !Array.isArray(data.peers)) {
                         return false;
                     }
+                } else if (data.type === MessageType.GetObject && data.objectid === "string") {
+                    if (Object.keys(data).length > 2) {
+                        return false;
+                    }
+                } else if (data.type === MessageType.IHaveObject && data.objectid === "string") {
+                    if (Object.keys(data).length > 2) {
+                        return false;
+                    }
                 }
+            }else if(data != null && typeof data.type === "undefined"){
+                return false
             }
         }
 

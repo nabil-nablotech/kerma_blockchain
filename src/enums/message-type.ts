@@ -3,4 +3,7 @@ export enum MessageType {
     Error = 'error',
     Getpeers = 'getpeers',
     Peers = 'peers',
+    GetObject = 'getobject',
+    IHaveObject = 'ihaveobject',
+    Object = 'object',
 }

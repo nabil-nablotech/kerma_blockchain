@@ -25,7 +25,7 @@ import { chainManager } from './chain'
 import { mempool } from './mempool'
 import { messageGenerator } from './utils/message-generator'
 import { MessageHandler } from './utils/message-handler'
-import { ErrorKey, InvalidHandshakeMessage } from './enums/error'
+import { ErrorKey, InvalidHandshakeMessage, UnkownObjectMessage } from './enums/error'
 
 export const VERSION = '0.10.1' /* TODO */
 export const NAME = 'nablotech' /* TODO */
@@ -185,13 +185,39 @@ export class Peer {
     this.socket.getNetSocket().write(messageGenerator.generatePeersMessage(Array.from(peerManager.getKnownPeers())))
     logger.info(`Peers message sent to: ${peerAddress}`)
   }
-  async onMessageIHaveObject(msg: IHaveObjectMessageType) {
+  async onMessageIHaveObject(msg: any) {
     /* TODO */
+    const peerAddress: string = `${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`
+    logger.info(`ihaveobject recieved from : ${peerAddress}`)
+    try {
+      const exists = await objectManager.exists(msg.objectid)
+      if (!exists) {
+        this.socket.getNetSocket().write(messageGenerator.generateGetObjectMessage(msg.objectid))
+        logger.info(`GetObject message sent to: ${peerAddress}`)
+      }
+    } catch (error) {
+      logger.error(error)
+    }
+
   }
-  async onMessageGetObject(msg: GetObjectMessageType) {
+  async onMessageGetObject(msg: any) {
     /* TODO */
+    const peerAddress: string = `${this.socket.getNetSocket().remoteAddress}:${this.socket.getNetSocket().remotePort}`
+    logger.info(`getobject recieved from : ${peerAddress}`)
+    try {
+      const object = await objectManager.get(msg.objectid)
+      if (object !== null) {
+        this.socket.getNetSocket().write(messageGenerator.generateObjectMessage(object))
+        logger.info(`object message sent to: ${peerAddress}`)
+      } else {
+        const errorMessage: string = messageGenerator.generateErrorMessage({ UNKNOWN_OBJECT: UnkownObjectMessage.UNKNOWN_OBJECT })
+        this.sendError(errorMessage)
+      }
+    } catch (error) {
+      logger.error(error)
+    }
   }
-  async onMessageObject(msg: ObjectMessageType) {
+  async onMessageObject(msg: any) {
     /* TODO */
   }
   async onMessageGetChainTip(msg: GetChainTipMessageType) {

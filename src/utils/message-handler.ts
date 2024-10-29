@@ -92,6 +92,12 @@ export class MessageHandler {
                 this.peer.onMessageGetPeers(mergedMessage)
             } else if (mergedMessage.type === MessageType.Peers) {
                 this.peer.onMessagePeers(mergedMessage)
+            } else if (mergedMessage.type === MessageType.IHaveObject) {
+                this.peer.onMessageIHaveObject(mergedMessage)
+            } else if (mergedMessage.type === MessageType.GetObject) {
+                this.peer.onMessageGetObject(mergedMessage)
+            } else if (mergedMessage.type === MessageType.Object) {
+                this.peer.onMessageObject(mergedMessage)
             }
         } else {
             const errorMessage: string = messageGenerator.generateErrorMessage({ INVALID_HANDSHAKE: InvalidHandshakeMessage.INVALID_HANDSHAKE })

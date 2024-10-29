@@ -31,6 +31,11 @@ export enum InvalidHandshakeMessage {
     INVALID_HANDSHAKE = 'A (semantic) error occurred related to the handshake.'
 }
 
+// UnkownObject messages 
+export enum UnkownObjectMessage {
+    UNKNOWN_OBJECT = 'Object does not exist.'
+}
+
 export type InvalidFormatError = {
     [ErrorKey.INVALID_FORMAT]: InvalidFormatMessage;
 }
@@ -39,4 +44,8 @@ export type InvalidHandshakeError = {
     [ErrorKey.INVALID_HANDSHAKE]: InvalidHandshakeMessage;
 }
 
-export type ErrorMessage = InvalidFormatError | InvalidHandshakeError
+export type UnkownObjectError = {
+    [ErrorKey.UNKNOWN_OBJECT]: UnkownObjectMessage;
+}
+
+export type ErrorMessage = InvalidFormatError | InvalidHandshakeError | UnkownObjectError

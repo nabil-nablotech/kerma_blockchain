@@ -23,6 +23,16 @@ class MessageGenerator {
         return this.canonicalJSONStringify(peersMessage)
     }
 
+    generateGetObjectMessage(objectid: string): string {
+        const getObjectMessage = { type: MessageType.GetObject, objectid: objectid }
+        return this.canonicalJSONStringify(getObjectMessage)
+    }
+
+    generateObjectMessage(object: any): string {
+        const objectMessage = { type: MessageType.Object, object: object }
+        return this.canonicalJSONStringify(objectMessage)
+    }
+
     canonicalJSONStringify(obj: any): string {
         if (Array.isArray(obj)) {
             return '[' + obj.map(this.canonicalJSONStringify).join(',') + ']';
