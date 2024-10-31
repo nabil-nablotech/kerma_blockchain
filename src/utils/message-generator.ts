@@ -5,32 +5,32 @@ import { MessageType } from "../enums/message-type"
 class MessageGenerator {
     generateHelloMessage(version: string, agent: string): string {
         const helloMessage = { type: MessageType.Hello, version, agent }
-        return this.canonicalJSONStringify(helloMessage)
+        return this.canonicalJSONStringify(helloMessage)+"\n"
     }
 
     generateErrorMessage(error: ErrorMessage): string {
         const errorMessage = { type: MessageType.Error, ...error }
-        return this.canonicalJSONStringify(errorMessage)
+        return this.canonicalJSONStringify(errorMessage)+"\n"
     }
 
     generateGetPeersMessage(): string {
         const getPeersMessage = { type: MessageType.Getpeers }
-        return this.canonicalJSONStringify(getPeersMessage)
+        return this.canonicalJSONStringify(getPeersMessage)+"\n"
     }
 
     generatePeersMessage(peerAddresses: string[]): string {
         const peersMessage = { type: MessageType.Peers, peers: peerAddresses }
-        return this.canonicalJSONStringify(peersMessage)
+        return this.canonicalJSONStringify(peersMessage)+"\n"
     }
 
     generateGetObjectMessage(objectid: string): string {
         const getObjectMessage = { type: MessageType.GetObject, objectid: objectid }
-        return this.canonicalJSONStringify(getObjectMessage)
+        return this.canonicalJSONStringify(getObjectMessage)+"\n"
     }
 
     generateObjectMessage(object: any): string {
         const objectMessage = { type: MessageType.Object, object: object }
-        return this.canonicalJSONStringify(objectMessage)
+        return this.canonicalJSONStringify(objectMessage)+"\n"
     }
 
     canonicalJSONStringify(obj: any): string {
